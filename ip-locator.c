@@ -3,7 +3,7 @@
 #include <curl/curl.h>
 #include <string.h>
 #include <regex.h>
-#include <cjson/cJSON.h>
+#include "cJSON/cJSON.h"
 
 struct response_data {
     char* response;
