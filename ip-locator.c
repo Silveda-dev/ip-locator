@@ -77,12 +77,17 @@ int main() {
     char ip_addr[20]; //Add additional space in case of incorrect input
 
     printf("Enter IP address: ");
-    scanf("%s", &ip_addr);
+    int ch, i = 0;
+
+    while ((ch = getchar()) != '\n' && i < 19) {
+        ip_addr[i] = ch;
+        i++;
+    }
 
     strcat(full_addr, ip_addr);
 
     if(ip_validator(ip_addr) != 0)
-        return 0;
+        exit(1);
 
     CURL* handle = curl_easy_init();
 
