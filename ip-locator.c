@@ -3,6 +3,7 @@
 #include <curl/curl.h>
 #include <string.h>
 #include <regex.h>
+#include <cjson/cJSON.h>
 
 struct response_data {
     char* response;
@@ -46,18 +47,42 @@ size_t writefunc(char* data, size_t sz, size_t n, struct response_data* rd) {
     return sz*n;
 }
 
+void parse_and_print(struct response_data* rd) {
+    cJSON* parsed_JSON = cJSON_Parse(rd->response);
+
+    if (parsed_JSON == NULL)
+        fprintf(stderr, "JSON parsing failed\n");
+    else {
+        if (!strcmp(cJSON_GetObjectItemCaseSensitive(parsed_JSON, "status")->valuestring, "success")) {
+            printf("Location: %s, %s, %s\n",
+                    cJSON_GetObjectItemCaseSensitive(parsed_JSON, "city")->valuestring,
+                    cJSON_GetObjectItemCaseSensitive(parsed_JSON, "regionName")->valuestring,
+                    cJSON_GetObjectItemCaseSensitive(parsed_JSON, "country")->valuestring);
+            printf("Coordinates: %f, %f\n",
+                    cJSON_GetObjectItemCaseSensitive(parsed_JSON, "lat")->valuedouble,
+                    cJSON_GetObjectItemCaseSensitive(parsed_JSON, "lon")->valuedouble);
+            printf("ISP: %s\n",
+                    cJSON_GetObjectItemCaseSensitive(parsed_JSON, "isp")->valuestring);
+            printf("Organisation: %s\n",
+                    cJSON_GetObjectItemCaseSensitive(parsed_JSON, "org")->valuestring);
+        } else
+            printf("IP could not be located\n");
+    }
+
+    cJSON_Delete(parsed_JSON);
+}
+
 int main() {
     char full_addr[38] = "http://ip-api.com/json/";
-    char ip_addr[20]; //Add additional space in case of error
+    char ip_addr[20]; //Add additional space in case of incorrect input
 
     printf("Enter IP address: ");
     scanf("%s", &ip_addr);
+
     strcat(full_addr, ip_addr);
 
     if(ip_validator(ip_addr) != 0)
         return 0;
-
-    //DEBUG LINE printf("Creating connection to %s\n", full_addr);
 
     CURL* handle = curl_easy_init();
 
@@ -77,7 +102,7 @@ int main() {
             return 1;
         }
 
-        printf("%s\n", rd.response);
+        parse_and_print(&rd);
         free(rd.response);
 
         curl_easy_cleanup(handle);
